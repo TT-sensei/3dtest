@@ -20,3 +20,18 @@ canvas{display:block;width:100%;height:100%;outline:none}
 #error{position:absolute;inset:auto 12px 12px;background:#fff0ef;color:#922;padding:12px;border-radius:12px}
 @media(min-width:760px){.controls{left:28px;transform:none;width:166px;height:124px}.bottom-help{left:210px;max-width:none}.look-button{right:20px;bottom:20px}.message{top:82px}}
 @media(max-width:420px){.brand{padding:9px 11px}.soft-button{padding:9px 10px}.bottom-help{font-size:10px;max-width:40%}.controls{width:138px;height:104px}.look-button{right:10px;bottom:132px;padding:10px;font-size:12px}}
+
+.top-actions{display:flex;align-items:center;justify-content:flex-end;gap:7px;pointer-events:auto}
+.top-actions .soft-button{font-size:clamp(11px,2.1vw,14px);padding:9px 11px}
+#foundCount{display:inline-block;margin-left:3px;padding:2px 6px;border-radius:9px;background:#e4f4e5;font-size:.9em}
+.discover-button{position:absolute;left:50%;bottom:clamp(142px,23vh,190px);transform:translateX(-50%);border:0;border-radius:16px;padding:13px 22px;background:#ffe4a8;color:#5d4926;font-weight:850;font-size:clamp(14px,2.8vw,18px);box-shadow:0 5px 18px rgba(35,73,81,.2);white-space:nowrap}
+.discover-button[hidden],.journal-panel[hidden]{display:none}
+.journal-panel{position:absolute;z-index:5;top:70px;right:12px;width:min(320px,calc(100vw - 24px));max-height:min(62vh,470px);overflow:auto;padding:14px 16px;border-radius:18px;background:rgba(255,255,255,.96);box-shadow:0 8px 26px rgba(35,73,81,.22);font-size:14px}
+.journal-heading{display:flex;align-items:center;justify-content:space-between;font-size:17px}
+.journal-heading button{border:0;background:#edf4ed;border-radius:10px;width:32px;height:32px;font-size:22px;color:var(--ink)}
+.journal-panel p{margin:7px 0 10px;color:#647b7d;font-size:12px}
+.journal-panel ul{list-style:none;margin:0;padding:0;display:grid;gap:6px}
+.journal-panel li{padding:8px 10px;border-radius:10px;background:#f0f7ee}
+.journal-panel li.missing{background:#f4f5f2;color:#91a09c}
+@media(max-width:520px){.topbar{align-items:flex-start}.top-actions{flex-direction:column;align-items:stretch}.top-actions .soft-button{min-height:36px;padding:7px 9px}.journal-panel{top:112px}.discover-button{bottom:145px}}
+@media(min-width:760px){.discover-button{bottom:160px;left:auto;right:22px;transform:none}.journal-panel{top:78px;right:20px}}
