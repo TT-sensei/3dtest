@@ -10,12 +10,12 @@ TT-senseiのthree.js初作品。ナビキャラと一緒に、かわいい小さ
 
 ## 技術
 - 静的HTML / CSS / JavaScript
-- Three.js r180を `vendor/three.module.js` に同梱
+- Three.js r150の単体ビルドを `vendor/three.min.js` に同梱し、モジュール読み込みの待機問題を回避
 - APIキー、バックエンド、ビルド工程なし
 - ナビキャラ素材は `TT-sensei/navi-character-` のWeb用画像を参照。素材デザインは改変せず2Dスプライトとして使用
 
 ## 起動
-GitHub Pagesで公開するか、ローカルサーバーから `index.html` を開いてください。ES Modulesを使うため、`file://` で直接開く方式はブラウザによって動作しません。
+GitHub Pagesで公開するか、ローカルサーバーから `index.html` を開いてください。
 
 ## オフライン対応
 Three.jsはローカルですが、ナビキャラ画像はGitHubから読み込むため、現在は完全オフラインではありません。必要な画像をこのリポジトリ内に同梱し、通信なしで動くことを次段階で確認します。
