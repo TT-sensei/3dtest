@@ -13,6 +13,18 @@ const game = document.querySelector('#game');
 const loading = document.querySelector('#loading');
 const message = document.querySelector('#message');
 const errorBox = document.querySelector('#error');
+const discoverButton = document.querySelector('#discoverButton');
+const journalButton = document.querySelector('#journalButton');
+const journalPanel = document.querySelector('#journalPanel');
+const journalList = document.querySelector('#journalList');
+const foundCount = document.querySelector('#foundCount');
+const DISCOVERABLE = [
+  ['place-はじまりの広場','はじまりの広場'],['place-みずべ','みずべ'],['place-おうちエリア','おうちエリア'],
+  ['place-まちの広場','まちの広場'],['place-おはなガーデン','おはなガーデン'],
+  ['person-sora','ソラ'],['person-saku','サク'],['person-kai','カイ'],['person-nami','ナミ'],['person-tsuki','ツキ']
+];
+let discovered = new Set();
+try { discovered = new Set(JSON.parse(localStorage.getItem('tt3d-discovered') || '[]')); } catch (_) { discovered = new Set(); }
 let scene, camera, renderer, player, playerSprite, guideIndex = Math.floor(Math.random()*guides.length);
 let yaw = 0, walkTime = 0, lookMode = false, nearbyTarget = null, lastNearbyMessage = '';
 const landmarks = [];
@@ -89,7 +101,7 @@ function makeTownsperson(id,x,z,pose) {
   loadCharacterTexture(id,poses,texture=>{
     const sprite=new THREE.Sprite(new THREE.SpriteMaterial({map:texture,transparent:true,depthWrite:false}));
     sprite.scale.set(1.65,2.2,1);sprite.position.set(x,1.1,z);
-    sprite.userData.townsperson=id;sprite.userData.message='ナビキャラを見つけたよ！ 町の中をもっと探検してみよう。';
+    sprite.userData.townsperson=id;sprite.userData.id='person-'+id;sprite.userData.title=({sora:'ソラ',saku:'サク',kai:'カイ',nami:'ナミ',tsuki:'ツキ',riku:'リク'})[id]||id;sprite.userData.message=sprite.userData.title+'を見つけたよ！ あいさつしてみよう。';
     scene.add(sprite);townsfolk.push(sprite);
   },()=>console.warn('ナビキャラ画像を読み込めませんでした:',id,poses));
 }
@@ -103,7 +115,8 @@ function makeSign(x,z,title,subtitle) {
   const board=new THREE.Mesh(new THREE.PlaneGeometry(3.0,1.05),new THREE.MeshBasicMaterial({map:tex,transparent:true,side:THREE.DoubleSide}));
   board.position.set(x,2.2,z);scene.add(board);
   const post=box(scene,.12,1.6,.12,'#9d7b56',x,1,z);
-  board.userData.message=title+'を見つけたよ！ ほかの場所も探してみよう。';
+  board.userData.id='place-'+title;board.userData.title=title;
+  board.userData.message=title+'を見つけたよ！ まわりをよく見てみよう。';
   landmarks.push(board);
 }
 function setupWorld() {
@@ -167,6 +180,26 @@ function loadGuide(index) {
     message.textContent='画像を読みこめなかったよ。';
   });
 }
+function renderJournal() {
+  const count = discovered.size;
+  foundCount.textContent = count + '/' + DISCOVERABLE.length;
+  journalList.innerHTML = '';
+  for (const [id,label] of DISCOVERABLE) {
+    const li=document.createElement('li');
+    li.className=discovered.has(id)?'found':'missing';
+    li.textContent=(discovered.has(id)?'✓ ':'○ ')+label;
+    journalList.appendChild(li);
+  }
+}
+function recordDiscovery(item) {
+  const id=item?.userData?.id;
+  if(!id || discovered.has(id)) return;
+  discovered.add(id);
+  try { localStorage.setItem('tt3d-discovered',JSON.stringify([...discovered])); } catch (_) {}
+  renderJournal();
+  discoverButton.hidden=true;
+  message.textContent=(item.userData.title||'ここ')+'をノートに記録したよ！';
+}
 function getMoveVector() {
   let forward=0,side=0;
   if(keys.has('ArrowUp')||keys.has('w')||keys.has('W')||held.has('up'))forward+=1;
@@ -193,6 +226,7 @@ function animate() {
   let nearest=null,nearestD=3.2;
   for(const item of [...landmarks,...townsfolk]){const p=item.position;const d=Math.hypot(player.position.x-p.x,player.position.z-p.z);if(d<nearestD){nearest=item;nearestD=d;}}
   if(nearest!==nearbyTarget){nearbyTarget=nearest;if(nearest){const msg=nearest.userData.message||'ナビキャラがいるよ！ あいさつしてみよう。';message.textContent=msg;lastNearbyMessage=msg;}else{lastNearbyMessage='';}}
+  discoverButton.hidden=!(nearbyTarget && nearbyTarget.userData.id && !discovered.has(nearbyTarget.userData.id));
   const target=new THREE.Vector3(player.position.x,1.2,player.position.z);
   const behind=new THREE.Vector3(Math.sin(yaw)*7,5.4,Math.cos(yaw)*7);
   camera.position.lerp(target.clone().add(behind),1-Math.pow(.001,dt));
@@ -207,6 +241,10 @@ document.querySelectorAll('[data-dir]').forEach(btn=>{
   const off=e=>{e.preventDefault();held.delete(dir);btn.classList.remove('pressed');};
   btn.addEventListener('pointerdown',on);btn.addEventListener('pointerup',off);btn.addEventListener('pointercancel',off);btn.addEventListener('pointerleave',off);
 });
+discoverButton.addEventListener('click',()=>recordDiscovery(nearbyTarget));
+journalButton.addEventListener('click',()=>{const opening=journalPanel.hidden;journalPanel.hidden=!opening;journalButton.setAttribute('aria-expanded',String(opening));});
+document.querySelector('#closeJournal').addEventListener('click',()=>{journalPanel.hidden=true;journalButton.setAttribute('aria-expanded','false');});
+renderJournal();
 document.querySelector('#changeGuide').addEventListener('click',()=>{loadGuide((guideIndex+1+Math.floor(Math.random()*(guides.length-1)))%guides.length);message.textContent='ちがうナビキャラと たんけん！';});
 document.querySelector('#lookAround').addEventListener('click',()=>{yaw+=Math.PI/3;message.textContent='向きをかえたよ。気になる場所へ行ってみよう！';});
 addEventListener('resize',()=>{if(!camera||!renderer)return;camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight);});
