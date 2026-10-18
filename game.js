@@ -14,7 +14,9 @@ const loading = document.querySelector('#loading');
 const message = document.querySelector('#message');
 const errorBox = document.querySelector('#error');
 let scene, camera, renderer, player, playerSprite, guideIndex = Math.floor(Math.random()*guides.length);
-let yaw = 0, walkTime = 0, lookMode = false;
+let yaw = 0, walkTime = 0, lookMode = false, nearbyTarget = null, lastNearbyMessage = '';
+const landmarks = [];
+const townsfolk = [];
 const keys = new Set();
 const held = new Set();
 const clock = new THREE.Clock();
@@ -44,6 +46,31 @@ function makeHouse(x,z,wall,roof) {
   box(g,.58,1.05, .09,'#815d49',0,.53,1.28);
   for(const wx of [-.78,.78]){box(g,.5,.55,.08,'#bce8f3',wx,1.15,1.29);box(g,.07,.6,.1,'#fff5d8',wx,1.15,1.34);box(g,.52,.07,.1,'#fff5d8',wx,1.15,1.34);}
 }
+function makeBench(x,z,rot=0) {
+  const g=new THREE.Group();g.position.set(x,0,z);g.rotation.y=rot;scene.add(g);
+  box(g,1.65,.16,.48,'#b98155',0,.62,0);
+  for(const px of [-.62,.62])box(g,.13,.62,.14,'#87664e',px,.31,0);
+  for(let i=0;i<3;i++)box(g,1.65,.08,.12,['#d7a16c','#c98c5d','#e0b17b'][i],0,.76,-.16+i*.16);
+}
+function makeLamp(x,z) {
+  const g=new THREE.Group();g.position.set(x,0,z);scene.add(g);
+  const pole=new THREE.Mesh(new THREE.CylinderGeometry(.07,.1,2.25,8),color('#617c7a'));pole.position.y=1.1;g.add(pole);
+  ball(g,.24,'#ffe9a8',0,2.35,0,1,1.15,1);
+}
+function makeFlowerbed(x,z) {
+  const g=new THREE.Group();g.position.set(x,0,z);scene.add(g);
+  const soil=new THREE.Mesh(new THREE.CylinderGeometry(.85,.95,.16,20),color('#9a7959'));soil.position.y=.08;g.add(soil);
+  for(let i=0;i<16;i++){const a=i*Math.PI*2/16,r=.25+Math.random()*.42;ball(g,.13,['#ff9fba','#fff0a0','#c5b7ff','#f8f8ed'][i%4],Math.cos(a)*r,.28,Math.sin(a)*r,.85,1.1,.85);}
+}
+function makeTownsperson(id,x,z,pose) {
+  new THREE.TextureLoader().load(ROOT+id+'/fullbody/'+pose+'.webp',texture=>{
+    texture.encoding=THREE.sRGBEncoding;
+    const sprite=new THREE.Sprite(new THREE.SpriteMaterial({map:texture,transparent:true,depthWrite:false}));
+    sprite.scale.set(1.65,2.2,1);sprite.position.set(x,1.1,z);
+    sprite.userData.townsperson=id;sprite.userData.message='ナビキャラを見つけたよ！ 町の中をもっと探検してみよう。';
+    scene.add(sprite);townsfolk.push(sprite);
+  });
+}
 function makeSign(x,z,title,subtitle) {
   const canvas=document.createElement('canvas');canvas.width=512;canvas.height=180;
   const c=canvas.getContext('2d');c.fillStyle='#fff9e8';c.strokeStyle='#c8a875';c.lineWidth=8;
@@ -55,6 +82,7 @@ function makeSign(x,z,title,subtitle) {
   board.position.set(x,2.2,z);scene.add(board);
   const post=box(scene,.12,1.6,.12,'#9d7b56',x,1,z);
   board.userData.message=title+'を見つけたよ！ ほかの場所も探してみよう。';
+  landmarks.push(board);
 }
 function setupWorld() {
   scene=new THREE.Scene();scene.background=new THREE.Color('#b9e6f4');scene.fog=new THREE.Fog('#b9e6f4',28,68);
@@ -76,10 +104,18 @@ function setupWorld() {
   const pond=new THREE.Mesh(new THREE.CircleGeometry(3.2,40),new THREE.MeshStandardMaterial({color:'#7ecddd',roughness:.28,metalness:.05}));pond.rotation.x=-Math.PI/2;pond.position.set(8,.02,-7);scene.add(pond);
   for(let i=0;i<5;i++){const stone=new THREE.Mesh(new THREE.CylinderGeometry(.38,.42,.15,10),color('#d6c9ad'));stone.position.set(6.4+i*.7,.12,-7+Math.sin(i*.8)*.6);scene.add(stone);}
   makeHouse(-7,-7,'#ffe4a9','#e99575');makeHouse(7,12,'#c7e8f1','#83b8d4');makeHouse(-9,14,'#f4cbd6','#b48bc2');
+  makeHouse(10,-15,'#f7e3b9','#d7a65c');makeHouse(-19,-10,'#d7edc7','#83b89a');makeHouse(19,13,'#f4d6c2','#d88c79');
+  makeBench(-3,-15,.15);makeBench(3,-15,-.15);makeBench(5,1,Math.PI/2);makeBench(-5,7,-Math.PI/2);
+  makeLamp(-4,-17);makeLamp(4,-17);makeLamp(-4,3);makeLamp(4,3);makeLamp(13,-3);makeLamp(13,2);
+  makeFlowerbed(-3,-11);makeFlowerbed(3,-11);makeFlowerbed(13,5);makeFlowerbed(-16,7);
   [[-14,-16,1.2],[-12,-4,.9],[-14,8,1.1],[-4,20,.9],[11,20,1.1],[15,10,.9],[15,-13,1.2],[4,-19,.8],[-19,1,1.1],[20,0,1]].forEach(p=>makeTree(...p));
   makeSign(0,-18,'はじまりの広場','あるいて たんけん');
   makeSign(11,-3,'みずべ','池のまわりを歩こう');
   makeSign(-13,4,'おうちエリア','かわいい家を見つけよう');
+  makeSign(0,7,'まちの広場','ベンチでひとやすみ');
+  makeSign(17,3,'おはなガーデン','お気に入りの花を探そう');
+  makeTownsperson('sora',-2,-13,'waving.webp');makeTownsperson('saku',3,-12,'waving.webp');
+  makeTownsperson('kai',-11,1,'waving.webp');makeTownsperson('nami',13,7,'waving.webp');makeTownsperson('tsuki',17,-10,'running.webp');
   // A few flowers as color dots
   for(let i=0;i<36;i++){const x=(Math.random()-.5)*42,z=(Math.random()-.5)*46;if(Math.abs(x)<3.2||Math.abs(z-5)<2.6)continue;ball(scene,.09,['#ffcfda','#fff0a5','#d6c7f5'][i%3],x,.12,z,1,.7,1);}
   player=new THREE.Group();scene.add(player);player.position.set(0,0,2);
@@ -120,6 +156,9 @@ function animate() {
   }
   // Keep the character sprite facing the camera.
   if(playerSprite)playerSprite.material.rotation=moving?Math.sin(walkTime)*.025:0;
+  let nearest=null,nearestD=3.2;
+  for(const item of [...landmarks,...townsfolk]){const p=item.position;const d=Math.hypot(player.position.x-p.x,player.position.z-p.z);if(d<nearestD){nearest=item;nearestD=d;}}
+  if(nearest!==nearbyTarget){nearbyTarget=nearest;if(nearest){const msg=nearest.userData.message||'ナビキャラがいるよ！ あいさつしてみよう。';message.textContent=msg;lastNearbyMessage=msg;}else{lastNearbyMessage='';}}
   const target=new THREE.Vector3(player.position.x,1.2,player.position.z);
   const behind=new THREE.Vector3(Math.sin(yaw)*7,5.4,Math.cos(yaw)*7);
   camera.position.lerp(target.clone().add(behind),1-Math.pow(.001,dt));
