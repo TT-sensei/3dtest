@@ -46,9 +46,9 @@ function ball(parent, r, hex, x,y,z, sx=1,sy=1,sz=1) {
 function makeTree(x,z,scale=1) {
   const g=new THREE.Group(); g.position.set(x,0,z); g.scale.setScalar(scale); scene.add(g);
   const trunk=new THREE.Mesh(new THREE.CylinderGeometry(.16,.22,1.15,7),color('#9b6b4b')); trunk.position.y=.56; trunk.castShadow=true;g.add(trunk);
-  ball(g,.72,'#75bd83',0,1.55,0,1,1.12,1);
-  ball(g,.48,'#91d69a',-.32,1.86,.05,.95,.95,.95);
-  ball(g,.48,'#65b879',.36,1.83,-.08,1,1,1);
+  ball(g,.72,'#3d9957',0,1.55,0,1,1.12,1);
+  ball(g,.48,'#65b96c',-.32,1.86,.05,.95,.95,.95);
+  ball(g,.48,'#2f874c',.36,1.83,-.08,1,1,1);
 }
 function makeHouse(x,z,wall,roof) {
   const g=new THREE.Group();g.position.set(x,0,z);scene.add(g);
@@ -120,26 +120,26 @@ function makeSign(x,z,title,subtitle) {
   landmarks.push(board);
 }
 function setupWorld() {
-  scene=new THREE.Scene();scene.background=new THREE.Color('#b9e6f4');scene.fog=new THREE.Fog('#b9e6f4',28,68);
+  scene=new THREE.Scene();scene.background=new THREE.Color('#86d2f2');scene.fog=new THREE.Fog('#a8dff3',38,82);
   camera=new THREE.PerspectiveCamera(58,innerWidth/innerHeight,.1,120);
   renderer=new THREE.WebGLRenderer({antialias:true,alpha:false});
   renderer.setPixelRatio(Math.min(devicePixelRatio,1.8));renderer.setSize(innerWidth,innerHeight);
   renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;
-  renderer.outputEncoding=THREE.sRGBEncoding;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.08;
+  renderer.outputEncoding=THREE.sRGBEncoding;renderer.toneMapping=THREE.NoToneMapping;renderer.toneMappingExposure=1.0;
   game.insertBefore(renderer.domElement,game.firstChild);
-  scene.add(new THREE.HemisphereLight('#e8f8ff','#82a77b',2.0));
-  const sun=new THREE.DirectionalLight('#fff1d0',2.2);sun.position.set(-8,16,8);sun.castShadow=true;sun.shadow.mapSize.set(1024,1024);sun.shadow.camera.left=-32;sun.shadow.camera.right=32;sun.shadow.camera.top=32;sun.shadow.camera.bottom=-32;scene.add(sun);
-  const ground=new THREE.Mesh(new THREE.PlaneGeometry(100,100),color('#a9dca7'));ground.rotation.x=-Math.PI/2;ground.position.y=-.06;ground.receiveShadow=true;scene.add(ground);
+  scene.add(new THREE.HemisphereLight('#e8f8ff','#63805a',1.25));
+  const sun=new THREE.DirectionalLight('#fff0cf',1.45);sun.position.set(-8,16,8);sun.castShadow=true;sun.shadow.mapSize.set(1024,1024);sun.shadow.camera.left=-32;sun.shadow.camera.right=32;sun.shadow.camera.top=32;sun.shadow.camera.bottom=-32;scene.add(sun);
+  const ground=new THREE.Mesh(new THREE.PlaneGeometry(100,100),color('#78bd70'));ground.rotation.x=-Math.PI/2;ground.position.y=-.06;ground.receiveShadow=true;scene.add(ground);
   // Curving-looking path made from friendly rounded blocks.
-  box(scene,5,.05,54,'#e9d6ad',0,.01,0);
-  box(scene,42,.05,4.2,'#e9d6ad',0,.015,5);
+  box(scene,5,.05,54,'#d8b97f',0,.01,0);
+  box(scene,42,.05,4.2,'#d8b97f',0,.015,5);
   // stepping stones along the road
-  for(let z=-20;z<22;z+=3){const s=new THREE.Mesh(new THREE.CylinderGeometry(.34,.34,.07,12),color('#f7e9c9'));s.position.set(.1,.06,z);scene.add(s);}
+  for(let z=-20;z<22;z+=3){const s=new THREE.Mesh(new THREE.CylinderGeometry(.34,.34,.07,12),color('#ead6a6'));s.position.set(.1,.06,z);scene.add(s);}
   // Pond and stepping stones
-  const pond=new THREE.Mesh(new THREE.CircleGeometry(3.2,40),new THREE.MeshStandardMaterial({color:'#7ecddd',roughness:.28,metalness:.05}));pond.rotation.x=-Math.PI/2;pond.position.set(8,.02,-7);scene.add(pond);
-  for(let i=0;i<5;i++){const stone=new THREE.Mesh(new THREE.CylinderGeometry(.38,.42,.15,10),color('#d6c9ad'));stone.position.set(6.4+i*.7,.12,-7+Math.sin(i*.8)*.6);scene.add(stone);}
-  makeHouse(-7,-7,'#ffe4a9','#e99575');makeHouse(7,12,'#c7e8f1','#83b8d4');makeHouse(-9,14,'#f4cbd6','#b48bc2');
-  makeHouse(10,-15,'#f7e3b9','#d7a65c');makeHouse(-19,-10,'#d7edc7','#83b89a');makeHouse(19,13,'#f4d6c2','#d88c79');
+  const pond=new THREE.Mesh(new THREE.CircleGeometry(3.2,40),new THREE.MeshStandardMaterial({color:'#39b9d1',roughness:.28,metalness:.02}));pond.rotation.x=-Math.PI/2;pond.position.set(8,.02,-7);scene.add(pond);
+  for(let i=0;i<5;i++){const stone=new THREE.Mesh(new THREE.CylinderGeometry(.38,.42,.15,10),color('#b8aa8b'));stone.position.set(6.4+i*.7,.12,-7+Math.sin(i*.8)*.6);scene.add(stone);}
+  makeHouse(-7,-7,'#f7c96b','#d95f4b');makeHouse(7,12,'#70c9df','#397eb5');makeHouse(-9,14,'#f08fb0','#8d5bb4');
+  makeHouse(10,-15,'#f3cf79','#bd7d31');makeHouse(-19,-10,'#9bd27f','#398a66');makeHouse(19,13,'#f2b18c','#bf5e57');
   makeBench(-3,-15,.15);makeBench(3,-15,-.15);makeBench(5,1,Math.PI/2);makeBench(-5,7,-Math.PI/2);
   makeLamp(-4,-17);makeLamp(4,-17);makeLamp(-4,3);makeLamp(4,3);makeLamp(13,-3);makeLamp(13,2);
   makeFlowerbed(-3,-11);makeFlowerbed(3,-11);makeFlowerbed(13,5);makeFlowerbed(-16,7);
