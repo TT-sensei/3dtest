@@ -129,8 +129,8 @@ function setupWorld() {
   renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;
   renderer.outputEncoding=THREE.sRGBEncoding;renderer.toneMapping=THREE.NoToneMapping;renderer.toneMappingExposure=1.0;
   game.insertBefore(renderer.domElement,game.firstChild);
-  scene.add(new THREE.HemisphereLight('#d9f0ff','#58794c',0.72));
-  const sun=new THREE.DirectionalLight('#fff3d9',0.85);sun.position.set(-8,16,8);sun.castShadow=true;sun.shadow.mapSize.set(1024,1024);sun.shadow.camera.left=-32;sun.shadow.camera.right=32;sun.shadow.camera.top=32;sun.shadow.camera.bottom=-32;scene.add(sun);
+  scene.add(new THREE.HemisphereLight('#d0e5f2','#4c6842',0.58));
+  const sun=new THREE.DirectionalLight('#f6e8cf',0.68);sun.position.set(-8,16,8);sun.castShadow=true;sun.shadow.mapSize.set(1024,1024);sun.shadow.camera.left=-32;sun.shadow.camera.right=32;sun.shadow.camera.top=32;sun.shadow.camera.bottom=-32;scene.add(sun);
   const ground=new THREE.Mesh(new THREE.PlaneGeometry(100,100),color('#78bd70'));ground.rotation.x=-Math.PI/2;ground.position.y=-.06;ground.receiveShadow=true;scene.add(ground);
   // Curving-looking path made from friendly rounded blocks.
   box(scene,5,.05,54,'#d8b97f',0,.01,0);
