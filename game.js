@@ -34,7 +34,9 @@ const held = new Set();
 const clock = new THREE.Clock();
 const worldLimit = 28;
 const mats = {};
-const color = (hex) => new THREE.MeshStandardMaterial({color:hex, roughness:.92});
+// Use simple, stable colors for the toy-like town. Keep lighting gentle so
+// bright ambient light does not wash the colored surfaces toward white.
+const color = (hex) => new THREE.MeshLambertMaterial({color:hex});
 function box(parent, w,h,d, hex, x,y,z, material=null) {
   const mesh = new THREE.Mesh(new THREE.BoxGeometry(w,h,d), material || color(hex));
   mesh.position.set(x,y,z); mesh.castShadow=true; mesh.receiveShadow=true; parent.add(mesh); return mesh;
@@ -127,8 +129,8 @@ function setupWorld() {
   renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;
   renderer.outputEncoding=THREE.sRGBEncoding;renderer.toneMapping=THREE.NoToneMapping;renderer.toneMappingExposure=1.0;
   game.insertBefore(renderer.domElement,game.firstChild);
-  scene.add(new THREE.HemisphereLight('#e8f8ff','#63805a',1.25));
-  const sun=new THREE.DirectionalLight('#fff0cf',1.45);sun.position.set(-8,16,8);sun.castShadow=true;sun.shadow.mapSize.set(1024,1024);sun.shadow.camera.left=-32;sun.shadow.camera.right=32;sun.shadow.camera.top=32;sun.shadow.camera.bottom=-32;scene.add(sun);
+  scene.add(new THREE.HemisphereLight('#d9f0ff','#58794c',0.72));
+  const sun=new THREE.DirectionalLight('#fff3d9',0.85);sun.position.set(-8,16,8);sun.castShadow=true;sun.shadow.mapSize.set(1024,1024);sun.shadow.camera.left=-32;sun.shadow.camera.right=32;sun.shadow.camera.top=32;sun.shadow.camera.bottom=-32;scene.add(sun);
   const ground=new THREE.Mesh(new THREE.PlaneGeometry(100,100),color('#78bd70'));ground.rotation.x=-Math.PI/2;ground.position.y=-.06;ground.receiveShadow=true;scene.add(ground);
   // Curving-looking path made from friendly rounded blocks.
   box(scene,5,.05,54,'#d8b97f',0,.01,0);
@@ -136,7 +138,7 @@ function setupWorld() {
   // stepping stones along the road
   for(let z=-20;z<22;z+=3){const s=new THREE.Mesh(new THREE.CylinderGeometry(.34,.34,.07,12),color('#ead6a6'));s.position.set(.1,.06,z);scene.add(s);}
   // Pond and stepping stones
-  const pond=new THREE.Mesh(new THREE.CircleGeometry(3.2,40),new THREE.MeshStandardMaterial({color:'#39b9d1',roughness:.28,metalness:.02}));pond.rotation.x=-Math.PI/2;pond.position.set(8,.02,-7);scene.add(pond);
+  const pond=new THREE.Mesh(new THREE.CircleGeometry(3.2,40),new THREE.MeshLambertMaterial({color:'#27b4d2'}));pond.rotation.x=-Math.PI/2;pond.position.set(8,.02,-7);scene.add(pond);
   for(let i=0;i<5;i++){const stone=new THREE.Mesh(new THREE.CylinderGeometry(.38,.42,.15,10),color('#b8aa8b'));stone.position.set(6.4+i*.7,.12,-7+Math.sin(i*.8)*.6);scene.add(stone);}
   makeHouse(-7,-7,'#f7c96b','#d95f4b');makeHouse(7,12,'#70c9df','#397eb5');makeHouse(-9,14,'#f08fb0','#8d5bb4');
   makeHouse(10,-15,'#f3cf79','#bd7d31');makeHouse(-19,-10,'#9bd27f','#398a66');makeHouse(19,13,'#f2b18c','#bf5e57');
