@@ -2,7 +2,7 @@ const THREE = window.THREE;
 
 const ROOT = 'https://raw.githubusercontent.com/TT-sensei/navi-character-/main/assets/web/characters/';
 const guides = [
-  {id:'riku',pose:'running',label:'ナビキャラ'},
+  {id:'riku',pose:'waving',label:'ナビキャラ'},
   {id:'sora',pose:'running',label:'ナビキャラ'},
   {id:'kai',pose:'waving',label:'ナビキャラ'},
   {id:'saku',pose:'waving',label:'ナビキャラ'},
@@ -62,14 +62,36 @@ function makeFlowerbed(x,z) {
   const soil=new THREE.Mesh(new THREE.CylinderGeometry(.85,.95,.16,20),color('#9a7959'));soil.position.y=.08;g.add(soil);
   for(let i=0;i<16;i++){const a=i*Math.PI*2/16,r=.25+Math.random()*.42;ball(g,.13,['#ff9fba','#fff0a0','#c5b7ff','#f8f8ed'][i%4],Math.cos(a)*r,.28,Math.sin(a)*r,.85,1.1,.85);}
 }
+function loadCharacterTexture(id, poses, onLoad, onFail) {
+  const loader = new THREE.TextureLoader();
+  loader.setCrossOrigin('anonymous');
+  const tryPose = (index) => {
+    if (index >= poses.length) { if (onFail) onFail(); return; }
+    loader.load(
+      ROOT + id + '/fullbody/' + poses[index] + '.webp',
+      texture => { texture.encoding=THREE.sRGBEncoding; onLoad(texture, poses[index]); },
+      undefined,
+      () => tryPose(index + 1)
+    );
+  };
+  tryPose(0);
+}
 function makeTownsperson(id,x,z,pose) {
-  new THREE.TextureLoader().load(ROOT+id+'/fullbody/'+pose+'.webp',texture=>{
-    texture.encoding=THREE.sRGBEncoding;
+  const fallbacks = {
+    kai:['waving','adjusting-glasses','looking-over-glasses','thinking'],
+    riku:['waving','hands-in-pockets','leaning'],
+    sora:['waving','greeting','running'],
+    saku:['waving','soft-wave','hands-clasped'],
+    tsuki:['running','waving','dynamic-pose'],
+    nami:['waving','reaching-out','hands-behind-back']
+  };
+  const poses = [pose, ...(fallbacks[id] || ['waving'])].filter((p,i,a)=>a.indexOf(p)===i);
+  loadCharacterTexture(id,poses,texture=>{
     const sprite=new THREE.Sprite(new THREE.SpriteMaterial({map:texture,transparent:true,depthWrite:false}));
     sprite.scale.set(1.65,2.2,1);sprite.position.set(x,1.1,z);
     sprite.userData.townsperson=id;sprite.userData.message='ナビキャラを見つけたよ！ 町の中をもっと探検してみよう。';
     scene.add(sprite);townsfolk.push(sprite);
-  });
+  },()=>console.warn('ナビキャラ画像を読み込めませんでした:',id,poses));
 }
 function makeSign(x,z,title,subtitle) {
   const canvas=document.createElement('canvas');canvas.width=512;canvas.height=180;
@@ -122,15 +144,27 @@ function setupWorld() {
   loadGuide(guideIndex);
 }
 function loadGuide(index) {
-  guideIndex=index; if(playerSprite) {player.remove(playerSprite);playerSprite.material.map?.dispose();playerSprite.material.dispose();}
-  const g=guides[index];const texLoader=new THREE.TextureLoader();
-  texLoader.load(ROOT+g.id+'/fullbody/'+g.pose+'.webp', texture=>{
-    texture.encoding=THREE.sRGBEncoding;
+  guideIndex=index;
+  if(playerSprite) {player.remove(playerSprite);playerSprite.material.map?.dispose();playerSprite.material.dispose();playerSprite=null;}
+  const g=guides[index];
+  const fallbacks = {
+    kai:['waving','adjusting-glasses','looking-over-glasses','thinking'],
+    riku:['waving','hands-in-pockets','leaning'],
+    sora:['running','waving','greeting'],
+    saku:['waving','soft-wave','hands-clasped'],
+    tsuki:['running','waving','dynamic-pose'],
+    nami:['waving','reaching-out','hands-behind-back']
+  };
+  const poses=[g.pose,...(fallbacks[g.id]||['waving'])].filter((p,i,a)=>a.indexOf(p)===i);
+  message.textContent='ナビキャラを よんでいるよ…';
+  loadCharacterTexture(g.id,poses,texture=>{
     const mat=new THREE.SpriteMaterial({map:texture,transparent:true,depthWrite:false});
     playerSprite=new THREE.Sprite(mat);playerSprite.scale.set(2.25,3.0,1);playerSprite.position.y=1.48;player.add(playerSprite);
+    errorBox.hidden=true;
     message.textContent='ナビキャラと まちを たんけんしよう！';
-  },undefined,()=>{
+  },()=>{
     errorBox.hidden=false;errorBox.textContent='ナビキャラの画像を読みこめなかったよ。ネットにつながっているか確認してね。';
+    message.textContent='画像を読みこめなかったよ。';
   });
 }
 function getMoveVector() {
