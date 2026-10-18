@@ -1,6 +1,6 @@
-:root{color-scheme:light;--ink:#27424c;--glass:rgba(255,255,255,.88);--shadow:0 5px 18px rgba(35,73,81,.14)}
+:root{color-scheme:only light;--ink:#27424c;--glass:rgba(255,255,255,.88);--shadow:0 5px 18px rgba(35,73,81,.14)}
 *{box-sizing:border-box}
-html,body{margin:0;width:100%;height:100%;overflow:hidden;font-family:ui-rounded,"Hiragino Maru Gothic ProN","Yu Gothic",system-ui,sans-serif;color:var(--ink);background:#b9e6f4}
+html,body{color-scheme:only light;margin:0;width:100%;height:100%;overflow:hidden;font-family:ui-rounded,"Hiragino Maru Gothic ProN","Yu Gothic",system-ui,sans-serif;color:var(--ink);background:#b9e6f4}
 button{font:inherit;touch-action:manipulation;cursor:pointer}
 #game{position:relative;width:100%;height:100%;min-height:320px;overflow:hidden;background:linear-gradient(#b9e6f4,#e2f4ee)}
 canvas{display:block;width:100%;height:100%;outline:none}
