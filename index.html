@@ -12,9 +12,15 @@
     <div id="loading" role="status">まちを じゅんびしているよ…</div>
     <div class="topbar">
       <div class="brand"><span class="brand-dot"></span><span>ちいさな3Dのまち</span></div>
-      <button id="changeGuide" class="soft-button" type="button">ナビキャラをかえる</button>
+      <div class="top-actions"><button id="journalButton" class="soft-button" type="button" aria-expanded="false">たんけんノート <span id="foundCount">0/10</span></button><button id="changeGuide" class="soft-button" type="button">ナビキャラをかえる</button></div>
     </div>
     <div id="message" class="message" aria-live="polite">まちを あるいてみよう！</div>
+    <button id="discoverButton" class="discover-button" type="button" hidden>ここを はっけん！</button>
+    <aside id="journalPanel" class="journal-panel" hidden aria-label="たんけんノート">
+      <div class="journal-heading"><strong>たんけんノート</strong><button id="closeJournal" type="button" aria-label="閉じる">×</button></div>
+      <p>見つけた場所やナビキャラが記録されるよ。</p>
+      <ul id="journalList"></ul>
+    </aside>
     <div class="bottom-help">PC：WASD／矢印キー　・　タブレット：下のボタン</div>
     <div class="controls" aria-label="移動ボタン">
       <button class="move up" data-dir="up" aria-label="前へ">▲</button>
