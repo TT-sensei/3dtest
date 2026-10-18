@@ -1,4 +1,4 @@
-import * as THREE from './vendor/three.module.js';
+const THREE = window.THREE;
 
 const ROOT = 'https://raw.githubusercontent.com/TT-sensei/navi-character-/main/assets/web/characters/';
 const guides = [
