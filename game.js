@@ -50,7 +50,7 @@ function makeSign(x,z,title,subtitle) {
   c.beginPath();c.roundRect(8,8,496,164,28);c.fill();c.stroke();
   c.fillStyle='#35515a';c.textAlign='center';c.font='bold 48px sans-serif';c.fillText(title,256,75);
   c.font='bold 25px sans-serif';c.fillStyle='#7b8f75';c.fillText(subtitle,256,122);
-  const tex=new THREE.CanvasTexture(canvas);tex.colorSpace=THREE.SRGBColorSpace;
+  const tex=new THREE.CanvasTexture(canvas);tex.encoding=THREE.sRGBEncoding;
   const board=new THREE.Mesh(new THREE.PlaneGeometry(3.0,1.05),new THREE.MeshBasicMaterial({map:tex,transparent:true,side:THREE.DoubleSide}));
   board.position.set(x,2.2,z);scene.add(board);
   const post=box(scene,.12,1.6,.12,'#9d7b56',x,1,z);
@@ -62,7 +62,7 @@ function setupWorld() {
   renderer=new THREE.WebGLRenderer({antialias:true,alpha:false});
   renderer.setPixelRatio(Math.min(devicePixelRatio,1.8));renderer.setSize(innerWidth,innerHeight);
   renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;
-  renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.08;
+  renderer.outputEncoding=THREE.sRGBEncoding;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.08;
   game.insertBefore(renderer.domElement,game.firstChild);
   scene.add(new THREE.HemisphereLight('#e8f8ff','#82a77b',2.0));
   const sun=new THREE.DirectionalLight('#fff1d0',2.2);sun.position.set(-8,16,8);sun.castShadow=true;sun.shadow.mapSize.set(1024,1024);sun.shadow.camera.left=-32;sun.shadow.camera.right=32;sun.shadow.camera.top=32;sun.shadow.camera.bottom=-32;scene.add(sun);
@@ -89,7 +89,7 @@ function loadGuide(index) {
   guideIndex=index; if(playerSprite) {player.remove(playerSprite);playerSprite.material.map?.dispose();playerSprite.material.dispose();}
   const g=guides[index];const texLoader=new THREE.TextureLoader();
   texLoader.load(ROOT+g.id+'/fullbody/'+g.pose+'.webp', texture=>{
-    texture.colorSpace=THREE.SRGBColorSpace;
+    texture.encoding=THREE.sRGBEncoding;
     const mat=new THREE.SpriteMaterial({map:texture,transparent:true,depthWrite:false});
     playerSprite=new THREE.Sprite(mat);playerSprite.scale.set(2.25,3.0,1);playerSprite.position.y=1.48;player.add(playerSprite);
     message.textContent='ナビキャラと まちを たんけんしよう！';
