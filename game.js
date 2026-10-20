@@ -1,14 +1,6 @@
 const THREE = window.THREE;
 
 const ROOT = 'https://raw.githubusercontent.com/TT-sensei/navi-character-/main/assets/web/characters/';
-const guides = [
-  {id:'riku',pose:'waving',label:'ナビキャラ'},
-  {id:'sora',pose:'running',label:'ナビキャラ'},
-  {id:'kai',pose:'waving',label:'ナビキャラ'},
-  {id:'saku',pose:'waving',label:'ナビキャラ'},
-  {id:'tsuki',pose:'running',label:'ナビキャラ'},
-  {id:'nami',pose:'waving',label:'ナビキャラ'}
-];
 const game = document.querySelector('#game');
 const loading = document.querySelector('#loading');
 const message = document.querySelector('#message');
@@ -25,7 +17,7 @@ const DISCOVERABLE = [
 ];
 let discovered = new Set();
 try { discovered = new Set(JSON.parse(localStorage.getItem('tt3d-discovered') || '[]')); } catch (_) { discovered = new Set(); }
-let scene, camera, renderer, player, playerSprite, guideIndex = Math.floor(Math.random()*guides.length);
+let scene, camera, renderer, player, playerSprite;
 let yaw = 0, walkTime = 0, lookMode = false, nearbyTarget = null, lastNearbyMessage = '';
 const landmarks = [];
 const townsfolk = [];
@@ -156,31 +148,45 @@ function setupWorld() {
   // A few flowers as color dots
   for(let i=0;i<36;i++){const x=(Math.random()-.5)*42,z=(Math.random()-.5)*46;if(Math.abs(x)<3.2||Math.abs(z-5)<2.6)continue;ball(scene,.09,['#ffcfda','#fff0a5','#d6c7f5'][i%3],x,.12,z,1,.7,1);}
   player=new THREE.Group();scene.add(player);player.position.set(0,0,2);
-  loadGuide(guideIndex);
+  makePlayerAvatar();
 }
-function loadGuide(index) {
-  guideIndex=index;
-  if(playerSprite) {player.remove(playerSprite);playerSprite.material.map?.dispose();playerSprite.material.dispose();playerSprite=null;}
-  const g=guides[index];
-  const fallbacks = {
-    kai:['waving','adjusting-glasses','looking-over-glasses','thinking'],
-    riku:['waving','hands-in-pockets','leaning'],
-    sora:['running','waving','greeting'],
-    saku:['waving','soft-wave','hands-clasped'],
-    tsuki:['running','waving','dynamic-pose'],
-    nami:['waving','reaching-out','hands-behind-back']
+function makePlayerAvatar() {
+  // A neutral, simple "my avatar" robot: no Navi-character identity or gender cues.
+  const avatar = new THREE.Group();
+  const shell = new THREE.MeshLambertMaterial({color:'#f4f1e8'});
+  const joint = new THREE.MeshLambertMaterial({color:'#aebdc0'});
+  const accent = new THREE.MeshLambertMaterial({color:'#79c9c2'});
+  const dark = new THREE.MeshLambertMaterial({color:'#344b50'});
+  const addPart = (geometry, material, x, y, z, parent=avatar) => {
+    const mesh = new THREE.Mesh(geometry, material);
+    mesh.position.set(x,y,z); mesh.castShadow=true; mesh.receiveShadow=true; parent.add(mesh);
+    return mesh;
   };
-  const poses=[g.pose,...(fallbacks[g.id]||['waving'])].filter((p,i,a)=>a.indexOf(p)===i);
-  message.textContent='ナビキャラを よんでいるよ…';
-  loadCharacterTexture(g.id,poses,texture=>{
-    const mat=new THREE.SpriteMaterial({map:texture,transparent:true,depthWrite:false});
-    playerSprite=new THREE.Sprite(mat);playerSprite.scale.set(2.25,3.0,1);playerSprite.position.y=1.48;player.add(playerSprite);
-    errorBox.hidden=true;
-    message.textContent='ナビキャラと まちを たんけんしよう！';
-  },()=>{
-    errorBox.hidden=false;errorBox.textContent='ナビキャラの画像を読みこめなかったよ。ネットにつながっているか確認してね。';
-    message.textContent='画像を読みこめなかったよ。';
-  });
+  // Rounded head and compact body, deliberately simple and neutral.
+  addPart(new THREE.SphereGeometry(.48,20,16), shell, 0,2.05,0);
+  addPart(new THREE.SphereGeometry(.39,18,14), shell, 0,1.12,0);
+  addPart(new THREE.SphereGeometry(.105,14,10), accent, 0,1.22,.355);
+  // Tiny face: friendly, but not strongly expressive.
+  addPart(new THREE.SphereGeometry(.045,10,8), dark, -.16,2.1,.405);
+  addPart(new THREE.SphereGeometry(.045,10,8), dark, .16,2.1,.405);
+  const arms=[];
+  for(const side of [-1,1]){
+    const arm=new THREE.Group(); arm.position.set(side*.43,1.42,0); avatar.add(arm); arms.push(arm);
+    addPart(new THREE.CapsuleGeometry(.105,.42,4,8), shell, 0,-.17,0,arm);
+    addPart(new THREE.SphereGeometry(.12,12,10), joint, 0,-.4,.015,arm);
+  }
+  const legs=[];
+  for(const side of [-1,1]){
+    const leg=new THREE.Group(); leg.position.set(side*.19,.82,0); avatar.add(leg); legs.push(leg);
+    addPart(new THREE.CapsuleGeometry(.12,.34,4,8), joint, 0,-.17,0,leg);
+    addPart(new THREE.SphereGeometry(.16,12,10), shell, 0,-.36,.07,leg);
+  }
+  avatar.userData.arms=arms; avatar.userData.legs=legs;
+  avatar.position.y=.02;
+  playerSprite=avatar;
+  player.add(avatar);
+  message.textContent='きみの分身と まちを たんけんしよう！';
+  errorBox.hidden=true;
 }
 function renderJournal() {
   const count = discovered.size;
@@ -221,10 +227,10 @@ function animate() {
     player.position.x=THREE.MathUtils.clamp(player.position.x+dx,-worldLimit,worldLimit);
     player.position.z=THREE.MathUtils.clamp(player.position.z+dz,-worldLimit,worldLimit);
     walkTime+=dt*9;
-    if(playerSprite){playerSprite.position.y=1.48+Math.abs(Math.sin(walkTime))*.08;playerSprite.material.rotation=Math.sin(walkTime)*.025;}
+    if(playerSprite){playerSprite.position.y=.02+Math.abs(Math.sin(walkTime))*.07;playerSprite.rotation.y=yaw;playerSprite.userData.arms?.forEach((arm,i)=>arm.rotation.x=Math.sin(walkTime+(i*Math.PI))*.48);playerSprite.userData.legs?.forEach((leg,i)=>leg.rotation.x=Math.sin(walkTime+(i*Math.PI))* .32);}
   }
   // Keep the character sprite facing the camera.
-  if(playerSprite)playerSprite.material.rotation=moving?Math.sin(walkTime)*.025:0;
+  if(playerSprite){if(!moving){playerSprite.userData.arms?.forEach(arm=>arm.rotation.x=0);playerSprite.userData.legs?.forEach(leg=>leg.rotation.x=0);}playerSprite.rotation.y=yaw;}
   let nearest=null,nearestD=3.2;
   for(const item of [...landmarks,...townsfolk]){const p=item.position;const d=Math.hypot(player.position.x-p.x,player.position.z-p.z);if(d<nearestD){nearest=item;nearestD=d;}}
   if(nearest!==nearbyTarget){nearbyTarget=nearest;if(nearest){const msg=nearest.userData.message||'ナビキャラがいるよ！ あいさつしてみよう。';message.textContent=msg;lastNearbyMessage=msg;}else{lastNearbyMessage='';}}
@@ -247,7 +253,6 @@ discoverButton.addEventListener('click',()=>recordDiscovery(nearbyTarget));
 journalButton.addEventListener('click',()=>{const opening=journalPanel.hidden;journalPanel.hidden=!opening;journalButton.setAttribute('aria-expanded',String(opening));});
 document.querySelector('#closeJournal').addEventListener('click',()=>{journalPanel.hidden=true;journalButton.setAttribute('aria-expanded','false');});
 renderJournal();
-document.querySelector('#changeGuide').addEventListener('click',()=>{loadGuide((guideIndex+1+Math.floor(Math.random()*(guides.length-1)))%guides.length);message.textContent='ちがうナビキャラと たんけん！';});
 document.querySelector('#lookAround').addEventListener('click',()=>{yaw+=Math.PI/3;message.textContent='向きをかえたよ。気になる場所へ行ってみよう！';});
 addEventListener('resize',()=>{if(!camera||!renderer)return;camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight);});
 try { setupWorld(); loading.classList.add('done'); animate(); }
