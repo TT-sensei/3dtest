@@ -249,11 +249,13 @@ document.querySelectorAll('[data-dir]').forEach(btn=>{
   const off=e=>{e.preventDefault();held.delete(dir);btn.classList.remove('pressed');};
   btn.addEventListener('pointerdown',on);btn.addEventListener('pointerup',off);btn.addEventListener('pointercancel',off);btn.addEventListener('pointerleave',off);
 });
-discoverButton.addEventListener('click',()=>recordDiscovery(nearbyTarget));
-journalButton.addEventListener('click',()=>{const opening=journalPanel.hidden;journalPanel.hidden=!opening;journalButton.setAttribute('aria-expanded',String(opening));});
-document.querySelector('#closeJournal').addEventListener('click',()=>{journalPanel.hidden=true;journalButton.setAttribute('aria-expanded','false');});
+if(discoverButton) discoverButton.addEventListener('click',()=>recordDiscovery(nearbyTarget));
+if(journalButton && journalPanel) journalButton.addEventListener('click',()=>{const opening=journalPanel.hidden;journalPanel.hidden=!opening;journalButton.setAttribute('aria-expanded',String(opening));});
+const closeJournalButton=document.querySelector('#closeJournal');
+if(closeJournalButton && journalPanel) closeJournalButton.addEventListener('click',()=>{journalPanel.hidden=true;journalButton?.setAttribute('aria-expanded','false');});
 renderJournal();
-document.querySelector('#lookAround').addEventListener('click',()=>{yaw+=Math.PI/3;message.textContent='向きをかえたよ。気になる場所へ行ってみよう！';});
+const lookAroundButton=document.querySelector('#lookAround');
+if(lookAroundButton) lookAroundButton.addEventListener('click',()=>{yaw+=Math.PI/3;message.textContent='向きをかえたよ。気になる場所へ行ってみよう！';});
 addEventListener('resize',()=>{if(!camera||!renderer)return;camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight);});
 try { setupWorld(); loading.classList.add('done'); animate(); }
 catch(err) { loading.textContent='3Dのまちを始められなかったよ';errorBox.hidden=false;errorBox.textContent=String(err); }
