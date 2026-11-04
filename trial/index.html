@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+  <meta name="theme-color" content="#b9e6f4">
+  <meta name="color-scheme" content="light">
+  <title>ちいさな3Dのまち（ためしページ）｜ナビキャラと歩く3Dのまち</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <main id="game" aria-label="ナビキャラと歩く3Dのまち">
+    <div id="loading" role="status">まちを じゅんびしているよ…</div>
+    <div class="topbar">
+      <div class="brand-stack">
+        <div class="brand"><span class="brand-dot"></span><span>ちいさな3Dのまち</span></div>
+        <div class="trial-note">ためしページ：素材サイトの3Dモデルを置いてみた版</div>
+      </div>
+      <div class="top-actions"><button id="journalButton" class="soft-button" type="button" aria-expanded="false">たんけんノート <span id="foundCount">0/11</span></button></div>
+    </div>
+    <div id="message" class="message" aria-live="polite">まちを あるいてみよう！</div>
+    <button id="discoverButton" class="discover-button" type="button" hidden>ここを はっけん！</button>
+    <aside id="journalPanel" class="journal-panel" hidden aria-label="たんけんノート">
+      <div class="journal-heading"><strong>たんけんノート</strong><button id="closeJournal" type="button" aria-label="閉じる">×</button></div>
+      <p>見つけた場所やナビキャラが記録されるよ。</p>
+      <ul id="journalList"></ul>
+    </aside>
+    <div class="bottom-help">PC：WASD／矢印キー　・　タブレット：下のボタン</div>
+    <div class="controls" aria-label="移動ボタン">
+      <button class="move up" data-dir="up" aria-label="前へ">▲</button>
+      <button class="move left" data-dir="left" aria-label="左へ">◀</button>
+      <button class="move down" data-dir="down" aria-label="後ろへ">▼</button>
+      <button class="move right" data-dir="right" aria-label="右へ">▶</button>
+    </div>
+    <button id="lookAround" class="look-button" type="button">まわりをみる</button>
+    <div id="error" hidden></div>
+  </main>
+  <script type="importmap">
+  {"imports":{"three":"./vendor/three.module.js","three/addons/":"./vendor/"}}
+  </script>
+  <script type="module" src="game.js?v=trial-models-1"></script>
+</body>
+</html>
