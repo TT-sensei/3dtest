@@ -1,6 +1,6 @@
 const THREE = window.THREE;
 
-const ROOT = 'https://raw.githubusercontent.com/TT-sensei/navi-character-/main/assets/web/characters/';
+const ROOT = 'https://tt-sensei.github.io/navi-character-/assets/web/characters/';
 const game = document.querySelector('#game');
 const loading = document.querySelector('#loading');
 const message = document.querySelector('#message');
@@ -13,7 +13,7 @@ const foundCount = document.querySelector('#foundCount');
 const DISCOVERABLE = [
   ['place-はじまりの広場','はじまりの広場'],['place-みずべ','みずべ'],['place-おうちエリア','おうちエリア'],
   ['place-まちの広場','まちの広場'],['place-おはなガーデン','おはなガーデン'],
-  ['person-sora','ソラ'],['person-saku','サク'],['person-kai','カイ'],['person-nami','ナミ'],['person-tsuki','ツキ']
+  ['person-sora','ソラ'],['person-saku','サク'],['person-kai','カイ'],['person-nami','ナミ'],['person-tsuki','ツキ'],['person-riku','リク']
 ];
 let discovered = new Set();
 try { discovered = new Set(JSON.parse(localStorage.getItem('tt3d-discovered') || '[]')); } catch (_) { discovered = new Set(); }
@@ -21,6 +21,21 @@ let scene, camera, renderer, player, playerSprite;
 let yaw = 0, walkTime = 0, lookMode = false, nearbyTarget = null, lastNearbyMessage = '';
 const landmarks = [];
 const townsfolk = [];
+const colliders = [];
+const clouds = [];
+const PLAYER_RADIUS = 0.42;
+function addCollider(x,z,r){ colliders.push({x,z,r}); }
+// Push the player out of every collider circle. Radial push-out keeps the
+// player sliding along walls instead of sticking or clipping through.
+function resolveCollisions(x,z) {
+  for(let pass=0;pass<2;pass++){
+    for(const c of colliders){
+      const dx=x-c.x, dz=z-c.z, min=c.r+PLAYER_RADIUS, d2=dx*dx+dz*dz;
+      if(d2<min*min){ const d=Math.sqrt(d2)||0.0001, push=(min-d)/d; x+=dx*push; z+=dz*push; }
+    }
+  }
+  return {x,z};
+}
 const keys = new Set();
 const held = new Set();
 const clock = new THREE.Clock();
@@ -43,25 +58,46 @@ function makeTree(x,z,scale=1) {
   ball(g,.72,'#3d9957',0,1.55,0,1,1.12,1);
   ball(g,.48,'#65b96c',-.32,1.86,.05,.95,.95,.95);
   ball(g,.48,'#2f874c',.36,1.83,-.08,1,1,1);
+  addCollider(x,z,.5*scale);
 }
-function makeHouse(x,z,wall,roof) {
+function makeHouse(x,z,wall,roof,hScale=1) {
   const g=new THREE.Group();g.position.set(x,0,z);scene.add(g);
-  box(g,2.8,1.9,2.5,wall,0,.95,0);
+  box(g,2.8,1.9*hScale,2.5,wall,0,.95*hScale,0);
   const roofMesh=new THREE.Mesh(new THREE.ConeGeometry(2.15,1.45,4),color(roof));
-  roofMesh.position.set(0,2.62,0);roofMesh.rotation.y=Math.PI/4;roofMesh.castShadow=true;g.add(roofMesh);
+  roofMesh.position.set(0,1.9*hScale+.72,0);roofMesh.rotation.y=Math.PI/4;roofMesh.castShadow=true;g.add(roofMesh);
   box(g,.58,1.05, .09,'#815d49',0,.53,1.28);
-  for(const wx of [-.78,.78]){box(g,.5,.55,.08,'#bce8f3',wx,1.15,1.29);box(g,.07,.6,.1,'#fff5d8',wx,1.15,1.34);box(g,.52,.07,.1,'#fff5d8',wx,1.15,1.34);}
+  for(const wx of [-.78,.78]){box(g,.5,.55,.08,'#bce8f3',wx,1.15*hScale,1.29);box(g,.07,.6,.1,'#fff5d8',wx,1.15*hScale,1.34);box(g,.52,.07,.1,'#fff5d8',wx,1.15*hScale,1.34);}
+  addCollider(x,z,1.85);
 }
 function makeBench(x,z,rot=0) {
   const g=new THREE.Group();g.position.set(x,0,z);g.rotation.y=rot;scene.add(g);
   box(g,1.65,.16,.48,'#b98155',0,.62,0);
   for(const px of [-.62,.62])box(g,.13,.62,.14,'#87664e',px,.31,0);
   for(let i=0;i<3;i++)box(g,1.65,.08,.12,['#d7a16c','#c98c5d','#e0b17b'][i],0,.76,-.16+i*.16);
+  for(const lx of [-.5,.5]) addCollider(x+lx*Math.cos(rot),z-lx*Math.sin(rot),.55);
 }
 function makeLamp(x,z) {
   const g=new THREE.Group();g.position.set(x,0,z);scene.add(g);
   const pole=new THREE.Mesh(new THREE.CylinderGeometry(.07,.1,2.25,8),color('#617c7a'));pole.position.y=1.1;g.add(pole);
   ball(g,.24,'#ffe9a8',0,2.35,0,1,1.15,1);
+  addCollider(x,z,.3);
+}
+function makeFountain(x,z) {
+  const g=new THREE.Group();g.position.set(x,0,z);scene.add(g);
+  const base=new THREE.Mesh(new THREE.CylinderGeometry(1.3,1.45,.38,20),color('#a9cbdd'));base.position.y=.19;base.castShadow=true;base.receiveShadow=true;g.add(base);
+  const water=new THREE.Mesh(new THREE.CircleGeometry(1.08,20),new THREE.MeshLambertMaterial({color:'#3fb9dc'}));water.rotation.x=-Math.PI/2;water.position.y=.39;g.add(water);
+  const pillar=new THREE.Mesh(new THREE.CylinderGeometry(.14,.2,.75,10),color('#a9cbdd'));pillar.position.y=.72;pillar.castShadow=true;g.add(pillar);
+  ball(g,.3,'#7ed6f2',0,1.22,0,1,.85,1);
+  addCollider(x,z,1.5);
+}
+function makeCloud(x,y,z,s=1) {
+  const g=new THREE.Group();g.position.set(x,y,z);g.scale.setScalar(s);scene.add(g);
+  ball(g,1.05,'#ffffff',0,0,0,1.45,.6,1);
+  ball(g,.78,'#ffffff',1.05,.06,.08,1.2,.58,.9);
+  ball(g,.68,'#ffffff',-1,.04,-.06,1.1,.52,.9);
+  g.traverse(m=>{m.castShadow=false;});
+  g.userData.speed=.12+Math.random()*.15;
+  clouds.push(g);
 }
 function makeFlowerbed(x,z) {
   const g=new THREE.Group();g.position.set(x,0,z);scene.add(g);
@@ -96,7 +132,7 @@ function makeTownsperson(id,x,z,pose) {
     const sprite=new THREE.Sprite(new THREE.SpriteMaterial({map:texture,transparent:true,depthWrite:false}));
     sprite.scale.set(1.65,2.2,1);sprite.position.set(x,1.1,z);
     sprite.userData.townsperson=id;sprite.userData.id='person-'+id;sprite.userData.title=({sora:'ソラ',saku:'サク',kai:'カイ',nami:'ナミ',tsuki:'ツキ',riku:'リク'})[id]||id;sprite.userData.message=sprite.userData.title+'を見つけたよ！ あいさつしてみよう。';
-    scene.add(sprite);townsfolk.push(sprite);
+    scene.add(sprite);townsfolk.push(sprite);addCollider(x,z,.55);
   },()=>console.warn('ナビキャラ画像を読み込めませんでした:',id,poses));
 }
 function makeSign(x,z,title,subtitle) {
@@ -112,12 +148,13 @@ function makeSign(x,z,title,subtitle) {
   board.userData.id='place-'+title;board.userData.title=title;
   board.userData.message=title+'を見つけたよ！ まわりをよく見てみよう。';
   landmarks.push(board);
+  addCollider(x,z,.42);
 }
 function setupWorld() {
   scene=new THREE.Scene();scene.background=new THREE.Color('#86d2f2');scene.fog=new THREE.Fog('#a8dff3',38,82);
   camera=new THREE.PerspectiveCamera(58,innerWidth/innerHeight,.1,120);
   renderer=new THREE.WebGLRenderer({antialias:true,alpha:false});
-  renderer.setPixelRatio(Math.min(devicePixelRatio,1.8));renderer.setSize(innerWidth,innerHeight);
+  renderer.setPixelRatio(Math.min(devicePixelRatio,1.5));renderer.setSize(innerWidth,innerHeight);
   renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;
   renderer.outputEncoding=THREE.sRGBEncoding;renderer.toneMapping=THREE.NoToneMapping;renderer.toneMappingExposure=1.0;
   game.insertBefore(renderer.domElement,game.firstChild);
@@ -127,26 +164,45 @@ function setupWorld() {
   // Curving-looking path made from friendly rounded blocks.
   box(scene,5,.05,54,'#d8b97f',0,.01,0);
   box(scene,42,.05,4.2,'#d8b97f',0,.015,5);
+  // Sidewalks along both roads (split so they do not cross the intersection)
+  for(const sx of [-3.02,3.02]){ box(scene,.9,.06,29.4,'#e9e2cf',sx,.02,-12.3); box(scene,.9,.06,19.4,'#e9e2cf',sx,.02,17.3); }
+  for(const sz of [2.45,7.55]){ box(scene,17.5,.06,.9,'#e9e2cf',-12.25,.02,sz); box(scene,17.5,.06,.9,'#e9e2cf',12.25,.02,sz); }
+  // Crosswalks: north of the intersection and on the east side
+  for(const cx of [-1.8,-.9,0,.9,1.8]) box(scene,.48,.07,1.7,'#ffffff',cx,.045,1.6);
+  for(const cz of [3.6,4.5,5.4,6.3]) box(scene,1.7,.07,.48,'#ffffff',6.6,.045,cz);
   // stepping stones along the road
   for(let z=-20;z<22;z+=3){const s=new THREE.Mesh(new THREE.CylinderGeometry(.34,.34,.07,12),color('#ead6a6'));s.position.set(.1,.06,z);scene.add(s);}
   // Pond and stepping stones
   const pond=new THREE.Mesh(new THREE.CircleGeometry(3.2,40),new THREE.MeshLambertMaterial({color:'#27b4d2'}));pond.rotation.x=-Math.PI/2;pond.position.set(8,.02,-7);scene.add(pond);
   for(let i=0;i<5;i++){const stone=new THREE.Mesh(new THREE.CylinderGeometry(.38,.42,.15,10),color('#b8aa8b'));stone.position.set(6.4+i*.7,.12,-7+Math.sin(i*.8)*.6);scene.add(stone);}
-  makeHouse(-7,-7,'#f7c96b','#d95f4b');makeHouse(7,12,'#70c9df','#397eb5');makeHouse(-9,14,'#f08fb0','#8d5bb4');
-  makeHouse(10,-15,'#f3cf79','#bd7d31');makeHouse(-19,-10,'#9bd27f','#398a66');makeHouse(19,13,'#f2b18c','#bf5e57');
+  // A small wooden pier reaching into the pond from the south shore
+  box(scene,1.15,.14,3.2,'#bb8d5f',9.6,.22,-5.2);
+  for(const px of [9.15,10.05])for(const pz of [-3.9,-6.5]){const post=new THREE.Mesh(new THREE.CylinderGeometry(.07,.07,.55,8),color('#8a6844'));post.position.set(px,.02,pz);scene.add(post);}
+  makeHouse(-7,-7,'#f7c96b','#d95f4b');makeHouse(7,12,'#70c9df','#397eb5',1.15);makeHouse(-9,14,'#f08fb0','#8d5bb4');
+  makeHouse(10,-15,'#f3cf79','#bd7d31',.92);makeHouse(-19,-10,'#9bd27f','#398a66',1.08);makeHouse(19,13,'#f2b18c','#bf5e57');
+  makeHouse(-20,-18,'#b5e3c8','#4d8f6a');makeHouse(20,-19,'#e6d7f5','#7a5ba6',1.1);
   makeBench(-3,-15,.15);makeBench(3,-15,-.15);makeBench(5,1,Math.PI/2);makeBench(-5,7,-Math.PI/2);
+  makeBench(-5.1,10.6,Math.PI/2);makeBench(5.1,10.6,-Math.PI/2);
   makeLamp(-4,-17);makeLamp(4,-17);makeLamp(-4,3);makeLamp(4,3);makeLamp(13,-3);makeLamp(13,2);
   makeFlowerbed(-3,-11);makeFlowerbed(3,-11);makeFlowerbed(13,5);makeFlowerbed(-16,7);
-  [[-14,-16,1.2],[-12,-4,.9],[-14,8,1.1],[-4,20,.9],[11,20,1.1],[15,10,.9],[15,-13,1.2],[4,-19,.8],[-19,1,1.1],[20,0,1]].forEach(p=>makeTree(...p));
+  makeFlowerbed(-3.4,14.6);makeFlowerbed(3.4,14.6);
+  [[-14,-16,1.2],[-12,-4,.9],[-14,8,1.1],[-4,20,.9],[11,20,1.1],[15,10,.9],[15,-13,1.2],[4,-19,.8],[-19,1,1.1],[20,0,1],
+   [-22,-2,1.0],[22,6,1.1],[-8,-20,1.0],[8,22,.95],[-22,20,1.15],[23,-14,.9]].forEach(p=>makeTree(...p));
+  // Town plaza south of the crossing: round pavement and a fountain
+  const plaza=new THREE.Mesh(new THREE.CircleGeometry(4.6,36),color('#ecd9a4'));plaza.rotation.x=-Math.PI/2;plaza.position.set(0,.045,10.8);plaza.receiveShadow=true;scene.add(plaza);
+  makeFountain(0,10.8);
   makeSign(0,-18,'はじまりの広場','あるいて たんけん');
   makeSign(11,-3,'みずべ','池のまわりを歩こう');
   makeSign(-13,4,'おうちエリア','かわいい家を見つけよう');
   makeSign(0,7,'まちの広場','ベンチでひとやすみ');
   makeSign(17,3,'おはなガーデン','お気に入りの花を探そう');
-  makeTownsperson('sora',-2,-13,'waving.webp');makeTownsperson('saku',3,-12,'waving.webp');
-  makeTownsperson('kai',-11,1,'waving.webp');makeTownsperson('nami',13,7,'waving.webp');makeTownsperson('tsuki',17,-10,'running.webp');
+  makeTownsperson('sora',-2,-13,'waving');makeTownsperson('saku',3,-12,'waving');
+  makeTownsperson('kai',-11,1,'waving');makeTownsperson('nami',13,7,'waving');makeTownsperson('tsuki',17,-10,'running');
+  makeTownsperson('riku',2.6,8.6,'waving');
+  // Slowly drifting clouds
+  makeCloud(-18,14,-20,1.2);makeCloud(6,16,-6,1);makeCloud(16,13,14,.9);makeCloud(-8,15,22,1.1);makeCloud(-26,17,4,.8);
   // A few flowers as color dots
-  for(let i=0;i<36;i++){const x=(Math.random()-.5)*42,z=(Math.random()-.5)*46;if(Math.abs(x)<3.2||Math.abs(z-5)<2.6)continue;ball(scene,.09,['#ffcfda','#fff0a5','#d6c7f5'][i%3],x,.12,z,1,.7,1);}
+  for(let i=0;i<60;i++){const x=(Math.random()-.5)*42,z=(Math.random()-.5)*46;if(Math.abs(x)<3.2||Math.abs(z-5)<2.6)continue;ball(scene,.09,['#ffcfda','#fff0a5','#d6c7f5'][i%3],x,.12,z,1,.7,1);}
   player=new THREE.Group();scene.add(player);player.position.set(0,0,2);
   makePlayerAvatar();
 }
@@ -224,13 +280,17 @@ function animate() {
     const len=Math.hypot(m.forward,m.side)||1;const speed=5.3;
     const dx=(Math.sin(yaw)*m.forward+Math.cos(yaw)*m.side)*speed*dt/len;
     const dz=(-Math.cos(yaw)*m.forward+Math.sin(yaw)*m.side)*speed*dt/len;
-    player.position.x=THREE.MathUtils.clamp(player.position.x+dx,-worldLimit,worldLimit);
-    player.position.z=THREE.MathUtils.clamp(player.position.z+dz,-worldLimit,worldLimit);
+    const solved=resolveCollisions(
+      THREE.MathUtils.clamp(player.position.x+dx,-worldLimit,worldLimit),
+      THREE.MathUtils.clamp(player.position.z+dz,-worldLimit,worldLimit));
+    player.position.x=THREE.MathUtils.clamp(solved.x,-worldLimit,worldLimit);
+    player.position.z=THREE.MathUtils.clamp(solved.z,-worldLimit,worldLimit);
     walkTime+=dt*9;
     if(playerSprite){playerSprite.position.y=.02+Math.abs(Math.sin(walkTime))*.07;playerSprite.rotation.y=yaw;playerSprite.userData.arms?.forEach((arm,i)=>arm.rotation.x=Math.sin(walkTime+(i*Math.PI))*.48);playerSprite.userData.legs?.forEach((leg,i)=>leg.rotation.x=Math.sin(walkTime+(i*Math.PI))* .32);}
   }
   // Keep the character sprite facing the camera.
   if(playerSprite){if(!moving){playerSprite.userData.arms?.forEach(arm=>arm.rotation.x=0);playerSprite.userData.legs?.forEach(leg=>leg.rotation.x=0);}playerSprite.rotation.y=yaw;}
+  for(const cloud of clouds){cloud.position.x+=cloud.userData.speed*dt;if(cloud.position.x>48)cloud.position.x=-48;}
   let nearest=null,nearestD=3.2;
   for(const item of [...landmarks,...townsfolk]){const p=item.position;const d=Math.hypot(player.position.x-p.x,player.position.z-p.z);if(d<nearestD){nearest=item;nearestD=d;}}
   if(nearest!==nearbyTarget){nearbyTarget=nearest;if(nearest){const msg=nearest.userData.message||'ナビキャラがいるよ！ あいさつしてみよう。';message.textContent=msg;lastNearbyMessage=msg;}else{lastNearbyMessage='';}}
