@@ -12,7 +12,7 @@ const journalList = document.querySelector('#journalList');
 const foundCount = document.querySelector('#foundCount');
 const DISCOVERABLE = [
   ['place-はじまりの広場','はじまりの広場'],['place-みずべ','みずべ'],['place-おうちエリア','おうちエリア'],
-  ['place-まちの広場','まちの広場'],['place-おはなガーデン','おはなガーデン'],
+  ['place-まちの広場','まちの広場'],['place-おはなガーデン','おはなガーデン'],['place-がっこう','がっこう'],
   ['person-sora','ソラ'],['person-saku','サク'],['person-kai','カイ'],['person-nami','ナミ'],['person-tsuki','ツキ'],['person-riku','リク']
 ];
 let discovered = new Set();
@@ -150,6 +150,32 @@ function makeSign(x,z,title,subtitle) {
   landmarks.push(board);
   addCollider(x,z,.42);
 }
+// Hand-made 3D models, generated as code with sand3d (Blender/bpy) and
+// exported as GLB. Loaded with the vendored GLTFLoader; materials are swapped
+// to flat Lambert so the models match the town's toy-like look.
+const pendingModels = [];
+const lambertCache = new Map();
+function flatMaterial(mat) {
+  if (!mat || !mat.color) return mat;
+  const key = mat.color.getHexString();
+  if (!lambertCache.has(key)) lambertCache.set(key, new THREE.MeshLambertMaterial({color: mat.color}));
+  return lambertCache.get(key);
+}
+function loadModel(file, x, z, rotY = 0, colliders = []) {
+  if (!THREE.GLTFLoader) return;
+  const p = new Promise(resolve => {
+    new THREE.GLTFLoader().load('models/' + file, gltf => {
+      const g = gltf.scene;
+      g.traverse(o => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; o.material = flatMaterial(o.material); } });
+      g.position.set(x, 0, z); g.rotation.y = rotY;
+      scene.add(g);
+      const cos = Math.cos(rotY), sin = Math.sin(rotY);
+      for (const [lx, lz, r] of colliders) addCollider(x + lx * cos + lz * sin, z - lx * sin + lz * cos, r);
+      resolve();
+    }, undefined, () => { console.warn('モデルを読み込めませんでした:', file); resolve(); });
+  });
+  pendingModels.push(p);
+}
 function setupWorld() {
   scene=new THREE.Scene();scene.background=new THREE.Color('#86d2f2');scene.fog=new THREE.Fog('#a8dff3',38,82);
   camera=new THREE.PerspectiveCamera(58,innerWidth/innerHeight,.1,120);
@@ -199,6 +225,26 @@ function setupWorld() {
   makeTownsperson('sora',-2,-13,'waving');makeTownsperson('saku',3,-12,'waving');
   makeTownsperson('kai',-11,1,'waving');makeTownsperson('nami',13,7,'waving');makeTownsperson('tsuki',17,-10,'running');
   makeTownsperson('riku',2.6,8.6,'waving');
+  // Hand-made models (sand3d): school, shop, new houses, a small park,
+  // cars on the roads, and street props. Colliders are given in each
+  // model's local frame and rotated with the model.
+  loadModel('school.glb', -15.5, 20, 0, [[-2.6,0,2.3],[0,0,2.3],[2.6,0,2.3]]);
+  loadModel('shop.glb', 15, -16.5, Math.PI/2, [[-1.3,0,2.4],[1.3,0,2.4]]);
+  loadModel('postbox.glb', 12.1, -14.4, Math.PI/2, [[0,0,.45]]);
+  loadModel('house-a.glb', -11.5, -17.5, -Math.PI/2, [[0,0,1.9]]);
+  loadModel('house-b.glb', 21, -6, Math.PI/2, [[0,0,1.85]]);
+  loadModel('house-c.glb', 12.5, 22.5, 0, [[0,0,1.9]]);
+  loadModel('slide.glb', 15.8, 21.5, Math.PI/2, [[0,1.1,.85],[0,-.4,.95]]);
+  loadModel('swing.glb', 19.6, 19.6, Math.PI/2, [[-1.3,0,.75],[1.3,0,.75]]);
+  loadModel('seesaw.glb', 17.4, 23.6, .4, [[0,0,.9]]);
+  loadModel('car-red.glb', -11, 5.9, -Math.PI/2, [[0,1,.95],[0,-1,.95]]);
+  loadModel('car-blue.glb', .95, -13, 0, [[0,1,.95],[0,-1,.95]]);
+  loadModel('car-yellow.glb', 13, 4.1, Math.PI/2, [[0,1,.95],[0,-1,.95]]);
+  loadModel('signal.glb', 4.3, 7.9, Math.PI/2, [[0,0,.3]]);
+  loadModel('busstop.glb', -3.7, -8, -Math.PI/2, [[0,.2,1.2]]);
+  makeSign(-11.2, 15.6, 'がっこう', '大きな校舎と旗');
+  makeBench(14.0, 18.4, .3);
+  makeLamp(20.6, 22.6);
   // Slowly drifting clouds
   makeCloud(-18,14,-20,1.2);makeCloud(6,16,-6,1);makeCloud(16,13,14,.9);makeCloud(-8,15,22,1.1);makeCloud(-26,17,4,.8);
   // A few flowers as color dots
@@ -317,5 +363,5 @@ renderJournal();
 const lookAroundButton=document.querySelector('#lookAround');
 if(lookAroundButton) lookAroundButton.addEventListener('click',()=>{yaw+=Math.PI/3;message.textContent='向きをかえたよ。気になる場所へ行ってみよう！';});
 addEventListener('resize',()=>{if(!camera||!renderer)return;camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight);});
-try { setupWorld(); loading.classList.add('done'); animate(); }
+try { setupWorld(); animate(); Promise.race([Promise.allSettled(pendingModels), new Promise(r => setTimeout(r, 4000))]).then(() => loading.classList.add('done')); }
 catch(err) { loading.textContent='3Dのまちを始められなかったよ';errorBox.hidden=false;errorBox.textContent=String(err); }
